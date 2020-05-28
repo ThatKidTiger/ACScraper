@@ -1,12 +1,22 @@
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
+
 from numpy import mean, median, percentile
+import numpy as np
+
 import re
+
 from dateutil.parser import *
 from dateutil.utils import today
 from dateutil.relativedelta import relativedelta
 from datetime import *
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.ticker
+
+import os
 
 def clean_prices(text):
     new_text = text
@@ -38,6 +48,11 @@ else:
 page = 1
 name = "marina"
 url = "https://www.ebay.com/sch/i.html?_from=R40&_nkw=\"%s\"+animal+crossing+card+%s&_sacat=0&LH_TitleDesc=0&LH_PrefLoc=1&_fsrp=1&_sop=13&LH_Complete=1&LH_Sold=1&_ipg=200&_pgn=%d" % (name, exclude, page)
+
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+outputdir = os.path.join(ROOT_DIR, "listings/%s" % name)
+if not os.path.exists(outputdir):
+    os.makedirs(outputdir)
 
 driver.get(url)
 
@@ -75,21 +90,33 @@ for i in range(1, 201):
         print("End of time interval reached: " + str(i) + " items processed.")
         break
 
+listings = {"titles" : titles, "prices" : prices, "dates" : dates}
+listingframe = pd.DataFrame(listings)
+
 print(name.upper() + ":")
 print("$" + str(round(mean(prices), 2)) + " Mean")
 print("$" + str(round(median(prices), 2)) + " Median")
 print("$" + str(round(percentile(prices, 25), 2)) + " 25th Percentile")
 print("$" + str(round(percentile(prices, 75), 2)) + " 75th Percentile")
-print(prices)
+print(listingframe[['prices', 'dates']])
+
+bp = pd.DataFrame(listingframe['prices']).plot.box()
+bp.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(20))
+bp.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator(4))
+bp.figure.savefig(os.path.join(outputdir, "boxplot"))
+input()
 driver.close()
+plt.close('all')
 
 #TO-DO
-#Front end for name entry and time entry
-#front end statistics reporting with pandas
+#save to database
+#statistics reporting with pandas
 #moving average and bar chart with quartiles
 #volume of sales relative to time
+#Front end for name entry and time entry
 #If you want to be extra, retrieve the image and put it next to the graph
 #add csv reading functionality for multiple searches back to back
 #add multiple page functionality
 #Remind aaliya to pay nick back his $35!!!!!
+#organize into sensible modules
 
