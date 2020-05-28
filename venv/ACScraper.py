@@ -36,17 +36,18 @@ else:
     earliestdate = today + relativedelta(days=-int(timeinterval))
 
 page = 1
-name = "erik"
+name = "marina"
 url = "https://www.ebay.com/sch/i.html?_from=R40&_nkw=\"%s\"+animal+crossing+card+%s&_sacat=0&LH_TitleDesc=0&LH_PrefLoc=1&_fsrp=1&_sop=13&LH_Complete=1&LH_Sold=1&_ipg=200&_pgn=%d" % (name, exclude, page)
 
 driver.get(url)
 
 titles = []
+dates = []
 prices = []
 
 for i in range(1, 201):
     titlepath = "/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[%d]/div/div[2]/a/h3" % i
-    pricepath = "/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[%d]/div/div[2]//span[@class='POSITIVE']" % i
+    pricepath = "/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[%d]/div/div[2]//span[@class='POSITIVE' or @class='STRIKETHROUGH POSITIVE']" % i
     shippingpath = "/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[%d]/div/div[2]//span[@class='s-item__shipping s-item__logisticsCost']" % i
     datepath = "/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[%d]/div/div[2]//span[@role='text']" % i
 
@@ -56,18 +57,23 @@ for i in range(1, 201):
         shipping = driver.find_element_by_xpath(shippingpath).text
         date = parse(clean_dates(driver.find_element_by_xpath(datepath).text)).date()
     except NoSuchElementException:
-        print("Search terminated. " + name.upper() + " page " + page + " had only " + i + " results.")
-        break;
+        print("Search terminated. " + name.upper() + " page " + str(page) + " had only " + str(i) + " results.")
+        break
 
-    if "Free" in shipping:
-        shipping = 0
+    if date >= earliestdate:
+        if "Free" in shipping:
+            shipping = 0
+        else:
+            shipping = float(clean_prices(shipping))
+
+        price = float(clean_prices(price))
+
+        prices.append(price + shipping)
+        titles.append(title)
+        dates.append(date)
     else:
-        shipping = float(clean_prices(shipping))
-
-    price = float(clean_prices(price))
-
-    prices.append(price + shipping)
-    titles.append(title)
+        print("End of time interval reached: " + str(i) + " items processed.")
+        break
 
 print(name.upper() + ":")
 print("$" + str(round(mean(prices), 2)) + " Mean")
@@ -78,9 +84,12 @@ print(prices)
 driver.close()
 
 #TO-DO
-#filter by date by scraping the sale time, optional time range field, default one month
 #Front end for name entry and time entry
 #front end statistics reporting with pandas
+#moving average and bar chart with quartiles
+#volume of sales relative to time
 #If you want to be extra, retrieve the image and put it next to the graph
+#add csv reading functionality for multiple searches back to back
+#add multiple page functionality
 #Remind aaliya to pay nick back his $35!!!!!
 
