@@ -1,0 +1,21 @@
+https://www.ebay.com/sch/i.html?_from=R40&_nkw=%22tangy%22+animal+crossing+card+-coin+-keychain+-custom+-fan-made+-pvc+-nfc+-sticker+-choose+-pick+-china+-unofficial+-lot+-gba&_sacat=0&LH_TitleDesc=0&LH_PrefLoc=1&_fsrp=1&_sop=15&LH_Complete=1&LH_Sold=1&_pgn=1
+
+Keep in mind pgn tag, format exclusions as configuration file lsit
+"quoted" card name inputted through gui
+
+/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[1]/div/div[2]/a/h3/text() //Name
+/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[1]/div/div[2]/div[4]/div[1]/span/span/text() //Price
+/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[1]/div/div[2]/div[4]/div[3]/span/text() //Shipping
+
+/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[2]/div/div[2]/a/h3/text()
+/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[2]/div/div[2]/div[4]/div[1]/span/span/text()
+/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[2]/div/div[2]/div[4]/div[3]/span/text()
+													^						 ^
+												Listing frame index		Secondary Information Index - 1 - Price, 3 - Shipping
+
+Listing number is the element 5 divs in, the list index
+200 listings per page, after which, you modify pgn to go to next page (verify existence of 200 items)
+Request page before attempting to scrape
+
+Shipping cost is 5 divs 2 lists and 2 further divs in, index 3, while price is index one, under the secondary information tag
+Evaluate if free before attempting to store value as float value
