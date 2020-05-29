@@ -100,19 +100,32 @@ print("$" + str(round(percentile(prices, 25), 2)) + " 25th Percentile")
 print("$" + str(round(percentile(prices, 75), 2)) + " 75th Percentile")
 print(listingframe[['prices', 'dates']])
 
+#boxplot pyplot code
 bp = pd.DataFrame(listingframe['prices']).plot.box()
-bp.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(20))
-bp.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator(4))
-bp.figure.savefig(os.path.join(outputdir, "boxplot"))
+plt.figure(1)
+plt.title(name.upper() + ' Price Distribution')
+bp.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(10))
+bp.yaxis.set_minor_locator(matplotlib.ticker.AutoMinorLocator(5))
+bp.grid(b = True, which = 'both', axis = 'y')
+bp.figure.savefig(os.path.join(outputdir, name + " boxplot"))
+
+#rolling average
+f2 = plt.figure(figsize = (19.2, 10.8))
+plt.title(name.upper() + ' Weekly Rolling Average')
+pc = listingframe[['dates', 'prices']]
+mm = pc.prices.rolling(window = 7).mean()
+
+#pc = plt.plot(pc.dates, pc.prices, label = 'Average Price', color = 'blue')
+mm = plt.plot(listingframe['dates'], mm, label = 'Weekly Rolling Average', color = 'blue')
+f2.savefig(os.path.join(outputdir, name + "lineplot"))
+plt.show()
+
 input()
 driver.close()
 plt.close('all')
 
 #TO-DO
 #save to database
-#statistics reporting with pandas
-#moving average and bar chart with quartiles
-#volume of sales relative to time
 #Front end for name entry and time entry
 #If you want to be extra, retrieve the image and put it next to the graph
 #add csv reading functionality for multiple searches back to back
