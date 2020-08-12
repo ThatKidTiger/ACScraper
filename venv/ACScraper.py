@@ -88,8 +88,8 @@ driver.implicitly_wait(3)
 
 for i in range(1, 201):
     titlePath = "/html//ul[@class='srp-results srp-list clearfix']/li[%d]/div/div[2]/a/h3" % i
-    pricePath = "/html//ul[@class='srp-results srp-list clearfix']/li[%d]/div/div[2]/div[4]/div[1]//span[@class='POSITIVE' or @class='STRIKETHROUGH POSITIVE']" % i
-    shippingPath = "/html//ul[@class='srp-results srp-list clearfix']/li[%d]/div/div[2]//span[@class='s-item__shipping s-item__logisticsCost']" % i
+    pricePath = "/html//ul[@class='srp-results srp-list clearfix']/li[%d]//div[@class='s-item__details clearfix']//span[@class='s-item__price']/span" % i
+    shippingPath = "/html//ul[@class='srp-results srp-list clearfix']/li[%d]//div[@class='s-item__details clearfix']//span[@class='s-item__shipping s-item__logisticsCost']" % i
     datePath = "/html//ul[@class='srp-results srp-list clearfix']/li[%d]/div/div[2]/div[2]/div//span[@class='POSITIVE']" % i
 
     try:
