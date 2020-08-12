@@ -1,3 +1,22 @@
+# Methodology:
+# Enter the search times, inserting the name of the villager into the url string
+# depending on whether or not genuine cards only is selected, include the home-made filtering strings
+# maybe check brand listing
+# For each entry, click on the entry, and check the page for the same filtered keywords, if gco is selected.
+# Add the relevant data to the arrays if none of the filtered keywords are found
+# Also check if the date exceeds the time range that the user has selected
+
+# Relevant Data:
+# Price
+# Shipping Price
+# Listing Names
+# Shipping Location, Check "Approximately US __" Tag if price is in non-US currency
+
+# Configurations:
+# Specific Country
+# Owned vs. New
+# Genuine Cards Only
+
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.keys import Keys
@@ -30,12 +49,17 @@ def clean_dates(text):
 
 driver = webdriver.Chrome("C:/Users/nytig/seleniumchrome/chromedriver.exe")
 
-excludes = open("exclude", "r")
-excluded = excludes.readlines()
-for i in range(0, len(excluded)):
-    excluded[i] = excluded[i].replace("\n", "")
+gco = True
 
-exclude = "-" + "+-".join(excluded)
+if gco:
+    excludes = open("exclude", "r")
+    excluded = excludes.readlines()
+    for i in range(0, len(excluded)):
+        excluded[i] = excluded[i].replace("\n", "")
+
+    exclude = "-" + "+-".join(excluded)
+else:
+    exclude = ""
 
 timeinterval = ""
 today = today().date()
@@ -46,7 +70,7 @@ else:
     earliestdate = today + relativedelta(days=-int(timeinterval))
 
 page = 1
-name = "marina"
+name = "marshal"
 url = "https://www.ebay.com/sch/i.html?_from=R40&_nkw=\"%s\"+animal+crossing+card+%s&_sacat=0&LH_TitleDesc=0&LH_PrefLoc=1&_fsrp=1&_sop=13&LH_Complete=1&LH_Sold=1&_ipg=200&_pgn=%d" % (name, exclude, page)
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -60,34 +84,55 @@ titles = []
 dates = []
 prices = []
 
+driver.implicitly_wait(3)
+
 for i in range(1, 201):
-    titlepath = "/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[%d]/div/div[2]/a/h3" % i
-    pricepath = "/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[%d]/div/div[2]//span[@class='POSITIVE' or @class='STRIKETHROUGH POSITIVE']" % i
-    shippingpath = "/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[%d]/div/div[2]//span[@class='s-item__shipping s-item__logisticsCost']" % i
-    datepath = "/html/body/div[4]/div[4]/div[2]/div[1]/div[2]/ul/li[%d]/div/div[2]//span[@role='text']" % i
+    titlePath = "/html//ul[@class='srp-results srp-list clearfix']/li[%d]/div/div[2]/a/h3" % i
+    pricePath = "/html//ul[@class='srp-results srp-list clearfix']/li[%d]/div/div[2]/div[4]/div[1]//span[@class='POSITIVE' or @class='STRIKETHROUGH POSITIVE']" % i
+    shippingPath = "/html//ul[@class='srp-results srp-list clearfix']/li[%d]/div/div[2]//span[@class='s-item__shipping s-item__logisticsCost']" % i
+    datePath = "/html//ul[@class='srp-results srp-list clearfix']/li[%d]/div/div[2]/div[2]/div//span[@class='POSITIVE']" % i
 
     try:
-        title = driver.find_element_by_xpath(titlepath).text
-        price = driver.find_element_by_xpath(pricepath).text
-        shipping = driver.find_element_by_xpath(shippingpath).text
-        date = parse(clean_dates(driver.find_element_by_xpath(datepath).text)).date()
+        genuine = True
+        if gco:
+            driver.find_element_by_xpath(titlePath).click()
+            try:
+                brand = driver.find_element_by_xpath("/html/body/div[3]/div[5]/div[1]//div[@class='itemAttr']//h2[@itemprop='brand']/span").text
+                if brand.lower() != "nintendo":
+                    genuine = False
+            except NoSuchElementException:
+                pass
+            driver.switch_to.frame("desc_ifr")
+            descriptionBody = driver.find_element_by_xpath("/html/body/table/tbody/tr/td/div").text.lower()
+
+            for word in excluded:
+                if word in descriptionBody:
+                    genuine = False
+                    break
+
+            driver.back()
+        if genuine:
+            title = driver.find_element_by_xpath(titlePath).text
+            price = driver.find_element_by_xpath(pricePath).text
+            shipping = driver.find_element_by_xpath(shippingPath).text
+            date = parse(clean_dates(driver.find_element_by_xpath(datePath).text)).date()
+
+            if date >= earliestdate:
+                if "Free" in shipping:
+                    shipping = 0
+                else:
+                    shipping = float(clean_prices(shipping))
+
+                price = float(clean_prices(price))
+
+                prices.append(price + shipping)
+                titles.append(title)
+                dates.append(date)
+            else:
+                print("End of time interval reached: " + str(i) + " items processed.")
+                break
     except NoSuchElementException:
         print("Search terminated. " + name.upper() + " page " + str(page) + " had only " + str(i) + " results.")
-        break
-
-    if date >= earliestdate:
-        if "Free" in shipping:
-            shipping = 0
-        else:
-            shipping = float(clean_prices(shipping))
-
-        price = float(clean_prices(price))
-
-        prices.append(price + shipping)
-        titles.append(title)
-        dates.append(date)
-    else:
-        print("End of time interval reached: " + str(i) + " items processed.")
         break
 
 listings = {"titles" : titles, "prices" : prices, "dates" : dates}
@@ -111,16 +156,14 @@ bp.figure.savefig(os.path.join(outputdir, name + " boxplot"))
 
 #rolling average
 f2 = plt.figure(figsize = (19.2, 10.8))
-plt.title(name.upper() + ' Weekly Rolling Average')
+plt.title(name.upper() + ' 3 Day Rolling Average')
 pc = listingframe[['dates', 'prices']]
-mm = pc.prices.rolling(window = 7).mean()
+mm = pc.prices.rolling(window = 3).mean()
 
 #pc = plt.plot(pc.dates, pc.prices, label = 'Average Price', color = 'blue')
-mm = plt.plot(listingframe['dates'], mm, label = 'Weekly Rolling Average', color = 'blue')
-f2.savefig(os.path.join(outputdir, name + "lineplot"))
-plt.show()
+mm = plt.plot(listingframe['dates'], mm, label = '3 Day Rolling Average', color = 'blue')
+f2.savefig(os.path.join(outputdir, name + " lineplot"))
 
-input()
 driver.close()
 plt.close('all')
 
